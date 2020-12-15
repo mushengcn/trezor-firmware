@@ -3,15 +3,20 @@ import ubinascii
 from trezor import ui, utils
 from trezor.crypto import random
 from trezor.enums import BackupType, ButtonRequestType
-from trezor.ui.components.tt.button import Button, ButtonDefault
-from trezor.ui.components.tt.checklist import Checklist
-from trezor.ui.components.tt.info import InfoConfirm
-from trezor.ui.components.tt.num_input import NumInput
-from trezor.ui.components.tt.scroll import Paginated
-from trezor.ui.components.tt.text import Text
 from trezor.ui.layouts import confirm_action, confirm_hex, show_success, show_warning
 
-from apps.common.confirm import confirm, require_hold_to_confirm
+try:
+    from trezor.ui.components.tt.button import Button, ButtonDefault
+    from trezor.ui.components.tt.checklist import Checklist
+    from trezor.ui.components.tt.info import InfoConfirm
+    from trezor.ui.components.tt.num_input import NumInput
+    from trezor.ui.components.tt.scroll import Paginated
+    from trezor.ui.components.tt.text import Text
+
+    from apps.common.confirm import confirm, require_hold_to_confirm
+except ImportError:
+    pass
+
 
 if False:
     from trezor import loop

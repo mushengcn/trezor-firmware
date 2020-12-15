@@ -1,4 +1,4 @@
-from trezor import log, wire, workflow, utils
+from trezor import log, utils, wire, workflow
 from trezor.enums import ButtonRequestType
 from trezor.messages import ButtonAck, ButtonRequest
 

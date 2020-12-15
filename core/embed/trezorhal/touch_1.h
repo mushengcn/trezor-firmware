@@ -11,7 +11,6 @@ void touch_init(void) {
 
   GPIO_InitTypeDef GPIO_InitStructure;
 
-  // PC4 capacitive touch panel module (CTPM) interrupt (INT) input
   GPIO_InitStructure.Mode = GPIO_MODE_INPUT;
   GPIO_InitStructure.Pull = GPIO_PULLUP;
   GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_LOW;

@@ -123,7 +123,11 @@ async def confirm_action(
             param_font=description_param_font,
         )
 
-    cls = HoldToConfirm if hold else Confirm
+    cls = Confirm
+    if hold:
+        cls = HoldToConfirm
+        if verb == Confirm.DEFAULT_CONFIRM:
+            verb = "Hold to confirm"
     kwargs = {}
     if hold_danger:
         kwargs = {"loader_style": LoaderDanger, "confirm_style": ButtonCancel}
