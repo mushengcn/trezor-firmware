@@ -25,6 +25,10 @@ codegen-units = 1
 [dependencies]
 cty = "0.2.1"
 
+[dependencies.heapless]
+version = "0.7.0"
+default_features = false
+
 [dependencies.cstr_core]
 version = "0.2.2"
 default_features = false

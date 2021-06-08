@@ -8,6 +8,7 @@ mod error;
 mod micropython;
 mod protobuf;
 mod trezorhal;
+mod ui;
 mod util;
 
 #[cfg(not(test))]

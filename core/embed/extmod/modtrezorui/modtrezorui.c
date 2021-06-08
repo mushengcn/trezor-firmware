@@ -25,11 +25,18 @@
 
 #if MICROPY_PY_TREZORUI
 
+#include "librust.h"
 #include "modtrezorui-display.h"
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorui_layout_new_example_obj,
+                                 ui_layout_new_example);
 
 STATIC const mp_rom_map_elem_t mp_module_trezorui_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_trezorui)},
     {MP_ROM_QSTR(MP_QSTR_Display), MP_ROM_PTR(&mod_trezorui_Display_type)},
+
+    {MP_ROM_QSTR(MP_QSTR_layout_new_example),
+     MP_ROM_PTR(&mod_trezorui_layout_new_example_obj)},
 };
 
 STATIC MP_DEFINE_CONST_DICT(mp_module_trezorui_globals,
