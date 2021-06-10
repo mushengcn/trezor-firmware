@@ -8,7 +8,7 @@ EVERYTHING = BITCOIN_ONLY != '1'
 TREZOR_MODEL = ARGUMENTS.get('TREZOR_MODEL', 'T')
 
 FEATURE_FLAGS = {
-    "RDI": True,
+    "RDI": False,
     "SECP256K1_ZKP": False,
     "SYSTEM_VIEW": False,
 }
