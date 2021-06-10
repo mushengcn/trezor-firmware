@@ -7,6 +7,7 @@ use crate::ui::{
     display,
     display::Font,
     math::{Color, Offset, Point, Rect},
+    theme,
 };
 
 use super::{component::Widget, Component, Event, EventCtx, Never};
@@ -50,6 +51,15 @@ impl<'a> Text<'a> {
     pub fn with_text_color(mut self, text_color: Color) -> Self {
         self.layout.text_color = text_color;
         self
+    }
+
+    pub fn with_line_breaking(mut self, line_breaking: LineBreaking) -> Self {
+        self.layout.line_breaking = line_breaking;
+        self
+    }
+
+    pub fn layout_mut(&mut self) -> &mut TextLayout {
+        &mut self.layout
     }
 }
 
@@ -122,15 +132,15 @@ impl TextLayout {
     pub fn new(bounds: Rect) -> Self {
         Self {
             bounds,
-            background_color: todo!(),
-            text_color: todo!(),
-            text_font: todo!(),
-            line_breaking: todo!(),
-            hyphen_font: todo!(),
-            hyphen_color: todo!(),
-            page_breaking: todo!(),
-            ellipsis_font: todo!(),
-            ellipsis_color: todo!(),
+            background_color: theme::BG,
+            text_color: theme::FG,
+            text_font: theme::FONT_NORMAL,
+            line_breaking: LineBreaking::BreakAtWhitespace,
+            hyphen_font: theme::FONT_BOLD,
+            hyphen_color: theme::GREY_LIGHT,
+            page_breaking: PageBreaking::CutAndInsertEllipsis,
+            ellipsis_font: theme::FONT_BOLD,
+            ellipsis_color: theme::GREY_LIGHT,
         }
     }
 
