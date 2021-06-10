@@ -1,11 +1,75 @@
 use core::iter::{Enumerate, Peekable};
 use core::slice;
 
+use heapless::LinearMap;
+
 use crate::ui::{
     display,
     display::Font,
     math::{Color, Offset, Point, Rect},
 };
+
+use super::{component::Widget, Component, Event, EventCtx, Never};
+
+pub struct Text<'a> {
+    widget: Widget,
+    layout: TextLayout,
+    format: &'static str,
+    args: LinearMap<&'static [u8], &'a [u8], { Text::MAX_ARGUMENTS }>,
+}
+
+impl<'a> Text<'a> {
+    pub const MAX_ARGUMENTS: usize = 6;
+
+    pub fn new(area: Rect) -> Self {
+        Self {
+            widget: Widget::new(area),
+            layout: TextLayout::new(area),
+            format: "",
+            args: LinearMap::new(),
+        }
+    }
+
+    pub fn format(mut self, format: &'static str) -> Self {
+        self.format = format;
+        self
+    }
+
+    pub fn with(mut self, key: &'static [u8], value: &'a [u8]) -> Self {
+        if self.args.insert(key, value).is_err() {
+            // Map is full, ignore.
+        }
+        self
+    }
+
+    pub fn with_text_font(mut self, text_font: Font) -> Self {
+        self.layout.text_font = text_font;
+        self
+    }
+
+    pub fn with_text_color(mut self, text_color: Color) -> Self {
+        self.layout.text_color = text_color;
+        self
+    }
+}
+
+impl<'a> Component for Text<'a> {
+    type Msg = Never;
+
+    fn widget(&mut self) -> &mut Widget {
+        &mut self.widget
+    }
+
+    fn event(&mut self, _ctx: &mut EventCtx, _event: Event) -> Option<Self::Msg> {
+        None
+    }
+
+    fn paint(&mut self) {
+        self.layout.clone().render_formatted(self.format, |arg| {
+            self.args.get(arg).map(|value| Op::Text(value))
+        });
+    }
+}
 
 #[derive(Copy, Clone)]
 pub enum LineBreaking {
@@ -28,7 +92,7 @@ pub enum PageBreaking {
 
 /// Visual instructions for laying out a formatted block of text.
 #[derive(Copy, Clone)]
-pub struct TextStyle {
+pub struct TextLayout {
     /// Bounding box restricting the layout dimensions.
     bounds: Rect,
 
@@ -54,18 +118,37 @@ pub struct TextStyle {
     ellipsis_color: Color,
 }
 
-impl TextStyle {
-    pub fn render_format<'a>(self, format: &'a str, arg_to_op: impl Fn(&[u8]) -> Option<Op<'a>>) {
+impl TextLayout {
+    pub fn new(bounds: Rect) -> Self {
+        Self {
+            bounds,
+            background_color: todo!(),
+            text_color: todo!(),
+            text_font: todo!(),
+            line_breaking: todo!(),
+            hyphen_font: todo!(),
+            hyphen_color: todo!(),
+            page_breaking: todo!(),
+            ellipsis_font: todo!(),
+            ellipsis_color: todo!(),
+        }
+    }
+
+    pub fn render_formatted<'a>(
+        self,
+        format: &'static str,
+        resolve: impl Fn(&[u8]) -> Option<Op<'a>>,
+    ) {
         let mut cursor = self.bounds.top_left();
 
-        self.layout_ops(
-            &mut Tokenizer::new(format).into_ops(arg_to_op),
+        self.layout_op_stream(
+            &mut Tokenizer::new(format).into_ops(resolve),
             &mut cursor,
             &mut TextRenderer,
         );
     }
 
-    pub fn layout_ops<'a>(
+    pub fn layout_op_stream<'a>(
         mut self,
         ops: &mut dyn Iterator<Item = Op<'a>>,
         cursor: &mut Point,
@@ -161,9 +244,9 @@ pub enum LayoutResult {
 
 /// Visitor for text segment operations.
 pub trait LayoutSink {
-    fn text(&mut self, cursor: &Point, style: &TextStyle, text: &[u8]) {}
-    fn hyphen(&mut self, cursor: &Point, style: &TextStyle) {}
-    fn ellipsis(&mut self, cursor: &Point, style: &TextStyle) {}
+    fn text(&mut self, _cursor: &Point, _layout: &TextLayout, _text: &[u8]) {}
+    fn hyphen(&mut self, _cursor: &Point, _layout: &TextLayout) {}
+    fn ellipsis(&mut self, _cursor: &Point, _layout: &TextLayout) {}
     fn out_of_bounds(&mut self) {}
 }
 
@@ -174,33 +257,33 @@ impl LayoutSink for TextNoop {}
 pub struct TextRenderer;
 
 impl LayoutSink for TextRenderer {
-    fn text(&mut self, cursor: &Point, style: &TextStyle, text: &[u8]) {
+    fn text(&mut self, cursor: &Point, layout: &TextLayout, text: &[u8]) {
         display::text(
             *cursor,
             text,
-            style.text_font,
-            style.text_color,
-            style.background_color,
+            layout.text_font,
+            layout.text_color,
+            layout.background_color,
         );
     }
 
-    fn hyphen(&mut self, cursor: &Point, style: &TextStyle) {
+    fn hyphen(&mut self, cursor: &Point, layout: &TextLayout) {
         display::text(
             *cursor,
             b"-",
-            style.hyphen_font,
-            style.hyphen_color,
-            style.background_color,
+            layout.hyphen_font,
+            layout.hyphen_color,
+            layout.background_color,
         );
     }
 
-    fn ellipsis(&mut self, cursor: &Point, style: &TextStyle) {
+    fn ellipsis(&mut self, cursor: &Point, layout: &TextLayout) {
         display::text(
             *cursor,
             b"...",
-            style.ellipsis_font,
-            style.ellipsis_color,
-            style.background_color,
+            layout.ellipsis_font,
+            layout.ellipsis_color,
+            layout.background_color,
         );
     }
 }
@@ -237,16 +320,18 @@ impl<'a> Tokenizer<'a> {
             inner: input.iter().enumerate().peekable(),
         }
     }
+}
 
+impl Tokenizer<'static> {
     /// Transform into an `Op` stream. Literal tokens become `Op::Text`,
-    /// argument tokens are converted through `arg_to_op` fn.
-    pub fn into_ops(
-        self,
-        arg_to_op: impl Fn(&[u8]) -> Option<Op<'a>>,
-    ) -> impl Iterator<Item = Op<'a>> {
+    /// argument tokens are converted through `resolve` fn.
+    pub fn into_ops<'a, F>(self, resolve: F) -> impl Iterator<Item = Op<'a>>
+    where
+        F: Fn(&'static [u8]) -> Option<Op<'a>>,
+    {
         self.filter_map(move |token| match token {
             Token::Literal(literal) => Some(Op::Text(literal)),
-            Token::Argument(argument) => arg_to_op(argument),
+            Token::Argument(argument) => resolve(argument),
         })
     }
 }
