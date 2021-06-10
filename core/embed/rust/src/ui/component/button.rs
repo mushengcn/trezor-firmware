@@ -1,5 +1,5 @@
 use crate::ui::{
-    display,
+    display::{self, Font},
     math::{Color, Offset, Rect},
 };
 
@@ -195,7 +195,7 @@ pub struct ButtonStyleSheet {
 }
 
 pub struct ButtonStyle {
-    pub font: i32,
+    pub font: Font,
     pub text_color: Color,
     pub button_color: Color,
     pub background_color: Color,

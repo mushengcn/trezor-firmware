@@ -1,6 +1,6 @@
 use crate::ui::math::{Offset, Point, Rect};
 
-use super::component::{Component, Event, EventCtx, Widget};
+use super::component::{Component, Event, EventCtx, Never, Widget};
 
 pub struct Empty {
     widget: Widget,
@@ -15,7 +15,7 @@ impl Empty {
 }
 
 impl Component for Empty {
-    type Msg = !;
+    type Msg = Never;
 
     fn widget(&mut self) -> &mut Widget {
         &mut self.widget

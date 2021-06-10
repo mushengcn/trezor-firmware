@@ -1,5 +1,5 @@
 use core::{
-    cell::{Cell, RefCell},
+    cell::RefCell,
     convert::{TryFrom, TryInto},
     time::Duration,
 };
@@ -51,44 +51,52 @@ where
 #[repr(C)]
 pub struct LayoutObj {
     base: ObjBase,
-    timer_fn: Cell<Obj>,
-    event_ctx: RefCell<EventCtx>,
-    root: Gc<RefCell<dyn ObjComponent>>,
+    inner: RefCell<LayoutObjInner>,
+}
+
+struct LayoutObjInner {
+    root: Gc<dyn ObjComponent>,
+    event_ctx: EventCtx,
+    timer_fn: Obj,
 }
 
 impl LayoutObj {
     /// Create a new `LayoutObj`, wrapping a root component.
     pub fn new(root: impl ObjComponent + 'static) -> Gc<Self> {
+        // SAFETY: We are coercing GC-allocated sized ptr into an unsized one.
+        let root = unsafe { Gc::from_raw(Gc::into_raw(Gc::new(root)) as *mut dyn ObjComponent) };
+
         Gc::new(Self {
             base: Self::obj_type().to_base(),
-            timer_fn: Cell::new(Obj::const_none()),
-            event_ctx: RefCell::new(EventCtx::new()),
-            root: Gc::new(RefCell::new(root)),
+            inner: RefCell::new(LayoutObjInner {
+                root,
+                event_ctx: EventCtx::new(),
+                timer_fn: Obj::const_none(),
+            }),
         })
     }
 
     /// Timer callback is expected to be a callable object of the following
     /// form: `def timer(token: int, deadline_in_ms: int)`.
     fn obj_set_timer_fn(&self, timer_fn: Obj) {
-        self.timer_fn.set(timer_fn);
+        self.inner.borrow_mut().timer_fn = timer_fn;
     }
 
     /// Run an event pass over the component tree. After the traversal, any
     /// pending timers are drained into `self.timer_callback`.
     fn obj_event(&self, event: Event) -> Obj {
-        let mut event_ctx = self.event_ctx.borrow_mut();
-        let mut root = self.root.borrow_mut();
-        let timer_fn = self.timer_fn.get();
+        let inner = &mut *self.inner.borrow_mut();
 
-        let msg = root.obj_event(&mut event_ctx, event);
+        // SAFETY: `inner.root` is unique because of the `inner.borrow_mut()`.
+        let msg = unsafe { Gc::as_mut(&mut inner.root) }.obj_event(&mut inner.event_ctx, event);
 
         // Drain any pending timers into the callback.
-        while let Some((token, deadline)) = event_ctx.pop_timer() {
+        while let Some((token, deadline)) = inner.event_ctx.pop_timer() {
             let token = token.try_into();
             let deadline = deadline.try_into();
             match (token, deadline) {
                 (Ok(token), Ok(deadline)) => {
-                    timer_fn.call_with_n_args(&[token, deadline]);
+                    inner.timer_fn.call_with_n_args(&[token, deadline]);
                 }
                 _ => {
                     // Failed to convert token or deadline into `Obj`, skip.
@@ -101,7 +109,9 @@ impl LayoutObj {
 
     /// Run a paint pass over the component tree.
     fn obj_paint_if_requested(&self) {
-        self.root.borrow_mut().obj_paint_if_requested();
+        let mut inner = self.inner.borrow_mut();
+        // SAFETY: `inner.root` is unique because of the `inner.borrow_mut()`.
+        unsafe { Gc::as_mut(&mut inner.root) }.obj_paint_if_requested();
     }
 
     fn obj_type() -> &'static Type {

@@ -29,20 +29,6 @@ impl<T> Gc<T> {
             Self::from_raw(raw)
         }
     }
-
-    /// Return a mutable reference to the value.
-    ///
-    /// # Safety
-    ///
-    /// `Gc` values can originate in the MicroPython interpreter, and these can
-    /// be both shared and mutable. Before calling this function, you have to
-    /// ensure that `this` is unique for the whole lifetime of the
-    /// returned mutable reference.
-    pub unsafe fn as_mut(this: &mut Self) -> &mut T {
-        // SAFETY: The caller must guarantee that `this` meets all the requirements for
-        // a mutable reference.
-        unsafe { this.0.as_mut() }
-    }
 }
 
 impl<T: ?Sized> Gc<T> {
@@ -65,6 +51,20 @@ impl<T: ?Sized> Gc<T> {
     /// value.
     pub fn into_raw(this: Self) -> *mut T {
         this.0.as_ptr()
+    }
+
+    /// Return a mutable reference to the value.
+    ///
+    /// # Safety
+    ///
+    /// `Gc` values can originate in the MicroPython interpreter, and these can
+    /// be both shared and mutable. Before calling this function, you have to
+    /// ensure that `this` is unique for the whole lifetime of the
+    /// returned mutable reference.
+    pub unsafe fn as_mut(this: &mut Self) -> &mut T {
+        // SAFETY: The caller must guarantee that `this` meets all the requirements for
+        // a mutable reference.
+        unsafe { this.0.as_mut() }
     }
 }
 

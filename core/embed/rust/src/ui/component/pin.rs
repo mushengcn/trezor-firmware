@@ -9,7 +9,7 @@ use crate::ui::{
 
 use super::{
     button::{Button, ButtonContent, ButtonMsg::Clicked},
-    component::{Component, Event, EventCtx, Widget},
+    component::{Component, Event, EventCtx, Never, Widget},
     label::{Label, LabelStyle},
 };
 
@@ -218,7 +218,7 @@ impl PinDots {
 }
 
 impl Component for PinDots {
-    type Msg = !;
+    type Msg = Never;
 
     fn widget(&mut self) -> &mut Widget {
         &mut self.widget

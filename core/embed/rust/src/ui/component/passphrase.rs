@@ -10,7 +10,7 @@ use crate::ui::{
 
 use super::{
     button::{Button, ButtonContent, ButtonMsg::Clicked},
-    component::{Component, Event, EventCtx, TimerToken, Widget},
+    component::{Component, Event, EventCtx, Never, TimerToken, Widget},
     swipe::{Swipe, SwipeDirection},
 };
 
@@ -293,7 +293,7 @@ impl TextBox {
 }
 
 impl Component for TextBox {
-    type Msg = !;
+    type Msg = Never;
 
     fn widget(&mut self) -> &mut Widget {
         &mut self.widget

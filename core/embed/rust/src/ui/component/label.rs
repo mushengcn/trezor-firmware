@@ -1,11 +1,11 @@
 use core::ops::Deref;
 
 use crate::ui::{
-    display,
+    display::{self, Font},
     math::{Align, Color, Point, Rect},
 };
 
-use super::component::{Component, Event, EventCtx, Widget};
+use super::component::{Component, Event, EventCtx, Never, Widget};
 
 pub struct Label<T> {
     widget: Widget,
@@ -65,13 +65,13 @@ impl<T: Deref<Target = [u8]>> Label<T> {
 }
 
 pub struct LabelStyle {
-    pub font: i32,
+    pub font: Font,
     pub text_color: Color,
     pub background_color: Color,
 }
 
 impl<T: Deref<Target = [u8]>> Component for Label<T> {
-    type Msg = !;
+    type Msg = Never;
 
     fn widget(&mut self) -> &mut Widget {
         &mut self.widget

@@ -1,12 +1,13 @@
 use super::{
     component::{ButtonStyle, ButtonStyleSheet, LabelStyle},
+    display::Font,
     math::Color,
 };
 
 // Font constants.
-pub const FONT_NORMAL: i32 = -1;
-pub const FONT_BOLD: i32 = -2;
-pub const FONT_MONO: i32 = -3;
+pub const FONT_NORMAL: Font = Font::new(-1);
+pub const FONT_BOLD: Font = Font::new(-2);
+pub const FONT_MONO: Font = Font::new(-3);
 
 // Typical backlight values.
 pub const BACKLIGHT_NORMAL: i32 = 150;

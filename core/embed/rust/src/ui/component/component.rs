@@ -4,6 +4,8 @@ use heapless::Vec;
 
 use crate::ui::math::{Point, Rect};
 
+pub enum Never {}
+
 pub trait Component {
     type Msg;
 

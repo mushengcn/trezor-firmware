@@ -3,7 +3,7 @@ use core::convert::TryInto;
 use crate::{
     micropython::obj::Obj,
     ui::{
-        component::{ButtonContent, Component, Confirm, ConfirmMsg, Empty},
+        component::{ButtonContent, Component, Confirm, ConfirmMsg, Empty, Never},
         display, theme,
     },
 };
@@ -24,8 +24,8 @@ where
     }
 }
 
-impl From<!> for Obj {
-    fn from(_: !) -> Self {
+impl From<Never> for Obj {
+    fn from(_: Never) -> Self {
         unreachable!()
     }
 }

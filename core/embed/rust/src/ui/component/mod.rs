@@ -10,7 +10,7 @@ mod swipe;
 mod text;
 
 pub use button::{Button, ButtonContent, ButtonMsg, ButtonStyle, ButtonStyleSheet};
-pub use component::{Component, Event, EventCtx, TimerToken};
+pub use component::{Component, Event, EventCtx, Never, TimerToken};
 pub use confirm::{Confirm, ConfirmMsg};
 pub use empty::Empty;
 pub use label::{Label, LabelStyle};
