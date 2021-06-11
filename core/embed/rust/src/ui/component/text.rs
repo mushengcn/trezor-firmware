@@ -12,14 +12,14 @@ use crate::ui::{
 
 use super::{component::Widget, Component, Event, EventCtx, Never};
 
-pub struct Text<'a> {
+pub struct Text<'arg> {
     widget: Widget,
     layout: TextLayout,
     format: &'static str,
-    args: LinearMap<&'static [u8], &'a [u8], { Text::MAX_ARGUMENTS }>,
+    args: LinearMap<&'static [u8], &'arg [u8], { Text::MAX_ARGUMENTS }>,
 }
 
-impl<'a> Text<'a> {
+impl<'arg> Text<'arg> {
     pub const MAX_ARGUMENTS: usize = 6;
 
     pub fn new(area: Rect) -> Self {
@@ -36,7 +36,7 @@ impl<'a> Text<'a> {
         self
     }
 
-    pub fn with(mut self, key: &'static [u8], value: &'a [u8]) -> Self {
+    pub fn with(mut self, key: &'static [u8], value: &'arg [u8]) -> Self {
         if self.args.insert(key, value).is_err() {
             // Map is full, ignore.
         }
@@ -58,12 +58,17 @@ impl<'a> Text<'a> {
         self
     }
 
+    pub fn with_page_breaking(mut self, page_breaking: PageBreaking) -> Self {
+        self.layout.page_breaking = page_breaking;
+        self
+    }
+
     pub fn layout_mut(&mut self) -> &mut TextLayout {
         &mut self.layout
     }
 }
 
-impl<'a> Component for Text<'a> {
+impl<'arg> Component for Text<'arg> {
     type Msg = Never;
 
     fn widget(&mut self) -> &mut Widget {
@@ -75,9 +80,15 @@ impl<'a> Component for Text<'a> {
     }
 
     fn paint(&mut self) {
-        self.layout.clone().render_formatted(self.format, |arg| {
-            self.args.get(arg).map(|value| Op::Text(value))
-        });
+        self.layout
+            .clone()
+            .render_formatted(self.format, |arg| match arg {
+                Token::Literal(literal) => Some(Op::Text(literal)),
+                Token::Argument(b"mono") => Some(Op::Font(theme::FONT_MONO)),
+                Token::Argument(b"bold") => Some(Op::Font(theme::FONT_BOLD)),
+                Token::Argument(b"normal") => Some(Op::Font(theme::FONT_NORMAL)),
+                Token::Argument(argument) => self.args.get(argument).map(|value| Op::Text(value)),
+            });
     }
 }
 
@@ -144,25 +155,25 @@ impl TextLayout {
         }
     }
 
-    pub fn render_formatted<'a>(
-        self,
-        format: &'static str,
-        resolve: impl Fn(&[u8]) -> Option<Op<'a>>,
-    ) {
+    pub fn render_formatted<'op, F, I>(self, format: &'static str, resolve: F)
+    where
+        F: Fn(Token<'static>) -> I,
+        I: IntoIterator<Item = Op<'op>>,
+    {
         let mut cursor = Point::new(
             self.bounds.top_left().x,
             self.bounds.top_left().y + self.text_font.line_height(),
         );
         self.layout_op_stream(
-            &mut Tokenizer::new(format).into_ops(resolve),
+            &mut Tokenizer::new(format).flat_map(resolve),
             &mut cursor,
             &mut TextRenderer,
         );
     }
 
-    pub fn layout_op_stream<'a>(
+    pub fn layout_op_stream<'op>(
         mut self,
-        ops: &mut dyn Iterator<Item = Op<'a>>,
+        ops: &mut dyn Iterator<Item = Op<'op>>,
         cursor: &mut Point,
         sink: &mut dyn LayoutSink,
     ) -> LayoutResult {
@@ -331,21 +342,6 @@ impl<'a> Tokenizer<'a> {
             input,
             inner: input.iter().enumerate().peekable(),
         }
-    }
-}
-
-impl Tokenizer<'static> {
-    /// Transform a `Token` stream into an `Op` stream. Literal tokens become
-    /// `Op::Text`, argument tokens are converted through the `resolve`
-    /// function.
-    pub fn into_ops<'a, F>(self, resolve: F) -> impl Iterator<Item = Op<'a>>
-    where
-        F: Fn(&'static [u8]) -> Option<Op<'a>>,
-    {
-        self.filter_map(move |token| match token {
-            Token::Literal(literal) => Some(Op::Text(literal)),
-            Token::Argument(argument) => resolve(argument),
-        })
     }
 }
 
