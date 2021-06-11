@@ -52,12 +52,8 @@ impl PassphraseKeyboard {
         let text = Vec::new();
         let textbox = TextBox::new(textbox_area, text);
         let page_swipe = Swipe::horizontal(area);
-        let confirm_btn = Button::with_text(
-            confirm_btn_area,
-            "Confirm".as_bytes(),
-            theme::button_confirm(),
-        );
-        let back_btn = Button::with_text(back_btn_area, "Back".as_bytes(), theme::button_clear());
+        let confirm_btn = Button::with_text(confirm_btn_area, b"Confirm", theme::button_confirm());
+        let back_btn = Button::with_text(back_btn_area, b"Back", theme::button_clear());
         let key_btns = Self::generate_keyboard(&key_grid);
 
         Self {
@@ -115,7 +111,7 @@ impl PassphraseKeyboard {
             key + 1 + 3
         });
         let text = KEYBOARD[page][key].as_bytes();
-        if text == " ".as_bytes() {
+        if text == b" " {
             todo!()
         } else {
             Button::with_text(area, text, theme::button_default())
@@ -180,7 +176,7 @@ impl PassphraseKeyboard {
     fn key_content(&self, page: usize, key: usize) -> &'static [u8] {
         match self.key_btns[page][key].content() {
             ButtonContent::Text(text) => text,
-            ButtonContent::Image(_) => " ".as_bytes(),
+            ButtonContent::Image(_) => b" ",
         }
     }
 

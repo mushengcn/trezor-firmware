@@ -26,8 +26,8 @@ fn panic(_info: &PanicInfo) -> ! {
     // confusion.
 
     // SAFETY: Safe because we are passing in \0-terminated literals.
-    let empty = unsafe { CStr::from_bytes_with_nul_unchecked("\0".as_bytes()) };
-    let msg = unsafe { CStr::from_bytes_with_nul_unchecked("rs\0".as_bytes()) };
+    let empty = unsafe { CStr::from_bytes_with_nul_unchecked(b"\0") };
+    let msg = unsafe { CStr::from_bytes_with_nul_unchecked(b"rs\0") };
 
     // TODO: Ideally we would take the file and line info out of
     // `PanicInfo::location()`.

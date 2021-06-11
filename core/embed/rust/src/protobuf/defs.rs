@@ -1,5 +1,5 @@
-use core::{mem, slice};
 use crate::error::Error;
+use core::{mem, slice};
 
 pub struct MsgDef {
     pub fields: &'static [FieldDef],
@@ -111,9 +111,9 @@ struct NameDef {
 }
 
 static ENUM_DEFS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/../../../../proto_enums.data"));
-static MSG_DEFS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/../../../..//proto_msgs.data"));
-static NAME_DEFS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/../../../..//proto_names.data"));
-static WIRE_DEFS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/../../../..//proto_wire.data"));
+static MSG_DEFS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/../../../../proto_msgs.data"));
+static NAME_DEFS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/../../../../proto_names.data"));
+static WIRE_DEFS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/../../../../proto_wire.data"));
 
 pub fn find_name_by_msg_offset(msg_offset: u16) -> Result<u16, Error> {
     let name_defs: &[NameDef] = unsafe {
@@ -123,7 +123,8 @@ pub fn find_name_by_msg_offset(msg_offset: u16) -> Result<u16, Error> {
         )
     };
 
-    name_defs.iter()
+    name_defs
+        .iter()
         .filter(|def| def.msg_offset == msg_offset)
         .next()
         .map(|def| def.msg_name)
