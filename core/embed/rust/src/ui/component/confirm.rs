@@ -21,7 +21,7 @@ pub struct Confirm<T> {
 impl<T> Confirm<T> {
     pub fn new(
         area: Rect,
-        content: T,
+        content: impl FnOnce(Rect) -> T,
         left: Option<ButtonContent>,
         left_styles: ButtonStyleSheet,
         right: Option<ButtonContent>,
@@ -32,6 +32,10 @@ impl<T> Confirm<T> {
         } else {
             Grid::new(area, 5, 1)
         };
+        let content = content(Rect::new(
+            grid.row_col(0, 0).top_left(),
+            grid.row_col(4, 1).bottom_right(),
+        ));
         let left_btn = left.map(|left| Button::new(grid.row_col(4, 0), left, left_styles));
         let right_btn = right.map(|right| Button::new(grid.row_col(4, 1), right, right_styles));
         Self {

@@ -3,7 +3,7 @@ use core::convert::TryInto;
 use crate::{
     micropython::obj::Obj,
     ui::{
-        component::{ButtonContent, Component, Confirm, ConfirmMsg, Empty, Never},
+        component::{ButtonContent, Component, Confirm, ConfirmMsg, Never, Text},
         display, theme,
     },
 };
@@ -34,10 +34,14 @@ impl From<Never> for Obj {
 extern "C" fn ui_layout_new_example() -> Obj {
     LayoutObj::new(Confirm::new(
         display::screen(),
-        Empty::new(),
-        Some(ButtonContent::Text("Left".as_bytes())),
+        |area| {
+            Text::new(area)
+                .format("Testing text layout, with some text, and some more text. And {param}")
+                .with(b"param", b"parameters!")
+        },
+        Some(ButtonContent::Text(b"Left")),
         theme::button_default(),
-        Some(ButtonContent::Text("Right".as_bytes())),
+        Some(ButtonContent::Text(b"Right")),
         theme::button_default(),
     ))
     .into()
