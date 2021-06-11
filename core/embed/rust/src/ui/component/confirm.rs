@@ -1,7 +1,7 @@
 use crate::ui::math::{Grid, Rect};
 
 use super::{
-    button::{Button, ButtonContent, ButtonMsg::Clicked, ButtonStyleSheet},
+    button::{Button, ButtonMsg::Clicked},
     component::{Component, Event, EventCtx, Widget},
 };
 
@@ -22,10 +22,8 @@ impl<T> Confirm<T> {
     pub fn new(
         area: Rect,
         content: impl FnOnce(Rect) -> T,
-        left: Option<ButtonContent>,
-        left_styles: ButtonStyleSheet,
-        right: Option<ButtonContent>,
-        right_styles: ButtonStyleSheet,
+        left: Option<impl FnOnce(Rect) -> Button>,
+        right: Option<impl FnOnce(Rect) -> Button>,
     ) -> Self {
         let grid = if left.is_some() && right.is_some() {
             Grid::new(area, 5, 2)
@@ -36,8 +34,8 @@ impl<T> Confirm<T> {
             grid.row_col(0, 0).top_left(),
             grid.row_col(4, 1).bottom_right(),
         ));
-        let left_btn = left.map(|left| Button::new(grid.row_col(4, 0), left, left_styles));
-        let right_btn = right.map(|right| Button::new(grid.row_col(4, 1), right, right_styles));
+        let left_btn = left.map(|left| left(grid.row_col(4, 0)));
+        let right_btn = right.map(|right| right(grid.row_col(4, 1)));
         Self {
             widget: Widget::new(grid.area),
             content,
