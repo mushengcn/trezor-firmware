@@ -149,8 +149,10 @@ impl TextLayout {
         format: &'static str,
         resolve: impl Fn(&[u8]) -> Option<Op<'a>>,
     ) {
-        let mut cursor = self.bounds.top_left();
-
+        let mut cursor = Point::new(
+            self.bounds.top_left().x,
+            self.bounds.top_left().y + self.text_font.line_height(),
+        );
         self.layout_op_stream(
             &mut Tokenizer::new(format).into_ops(resolve),
             &mut cursor,
@@ -333,8 +335,9 @@ impl<'a> Tokenizer<'a> {
 }
 
 impl Tokenizer<'static> {
-    /// Transform into an `Op` stream. Literal tokens become `Op::Text`,
-    /// argument tokens are converted through `resolve` fn.
+    /// Transform a `Token` stream into an `Op` stream. Literal tokens become
+    /// `Op::Text`, argument tokens are converted through the `resolve`
+    /// function.
     pub fn into_ops<'a, F>(self, resolve: F) -> impl Iterator<Item = Op<'a>>
     where
         F: Fn(&'static [u8]) -> Option<Op<'a>>,
