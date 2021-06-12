@@ -311,7 +311,7 @@ impl LayoutSink for TextRenderer {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum Token<'a> {
     /// Process literal text content.
     Literal(&'a [u8]),
@@ -388,7 +388,7 @@ impl<'a> Iterator for Tokenizer<'a> {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum Op<'a> {
     /// Render text with current color and font.
     Text(&'a [u8]),
@@ -493,5 +493,41 @@ impl Span {
             insert_hyphen_before_line_break: false,
             skip_next_chars: 0,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use core::array;
+
+    use super::*;
+
+    #[test]
+    fn tokenizer_yields_expected_tokens() {
+        assert!(Tokenizer::new("").eq(array::IntoIter::new([])));
+        assert!(Tokenizer::new("a").eq(array::IntoIter::new([Token::Literal(b"a")])));
+        assert!(
+            Tokenizer::new("a\0b").eq(array::IntoIter::new([Token::Literal("a\0b".as_bytes())]))
+        );
+        assert!(Tokenizer::new("{").eq(array::IntoIter::new([])));
+        assert!(Tokenizer::new("a{").eq(array::IntoIter::new([Token::Literal(b"a")])));
+        assert!(Tokenizer::new("a{b").eq(array::IntoIter::new([Token::Literal(b"a")])));
+        assert!(Tokenizer::new("{}").eq(array::IntoIter::new([Token::Argument(b"")])));
+        assert!(Tokenizer::new("a{}b{").eq(array::IntoIter::new([
+            Token::Literal(b"a"),
+            Token::Argument(b""),
+            Token::Literal(b"b"),
+        ])));
+        assert!(
+            Tokenizer::new("{\0}").eq(array::IntoIter::new([Token::Argument("\0".as_bytes()),]))
+        );
+        assert!(Tokenizer::new("{{b}").eq(array::IntoIter::new([Token::Argument(b"{b"),])));
+        assert!(Tokenizer::new("{{{{abc").eq(array::IntoIter::new([])));
+        assert!(Tokenizer::new("a{}{{}}}}").eq(array::IntoIter::new([
+            Token::Literal(b"a"),
+            Token::Argument(b""),
+            Token::Argument(b"{"),
+            Token::Literal(b"}}}"),
+        ])));
     }
 }

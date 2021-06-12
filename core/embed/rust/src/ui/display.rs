@@ -63,7 +63,7 @@ pub fn line_height() -> i32 {
     LINE_HEIGHT
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct Font {
     pub id: i32,
 }
