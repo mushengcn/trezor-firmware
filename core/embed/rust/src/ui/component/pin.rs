@@ -193,7 +193,7 @@ impl PinDots {
         }
     }
 
-    fn layout(center: Point, digit_count: usize) -> Rect {
+    fn layout(_center: Point, _digit_count: usize) -> Rect {
         todo!()
     }
 

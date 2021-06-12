@@ -168,7 +168,7 @@ impl Component for Button {
                     style.button_color,
                 );
             }
-            ButtonContent::Image(image) => {
+            ButtonContent::Image(_image) => {
                 todo!();
             }
         }
