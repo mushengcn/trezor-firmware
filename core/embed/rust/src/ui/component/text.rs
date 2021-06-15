@@ -115,28 +115,28 @@ pub enum PageBreaking {
 #[derive(Copy, Clone)]
 pub struct TextLayout {
     /// Bounding box restricting the layout dimensions.
-    bounds: Rect,
+    pub bounds: Rect,
 
     /// Background color.
-    background_color: Color,
+    pub background_color: Color,
     /// Text color. Can be overridden by `Op::Color`.
-    text_color: Color,
+    pub text_color: Color,
     /// Text font ID. Can be overridden by `Op::Font`.
-    text_font: Font,
+    pub text_font: Font,
 
     /// Specifies which line-breaking strategy to use.
-    line_breaking: LineBreaking,
+    pub line_breaking: LineBreaking,
     /// Font used for drawing the word-breaking hyphen.
-    hyphen_font: Font,
+    pub hyphen_font: Font,
     /// Foreground color used for drawing the hyphen.
-    hyphen_color: Color,
+    pub hyphen_color: Color,
 
     /// Specifies what to do at the end of the page.
-    page_breaking: PageBreaking,
+    pub page_breaking: PageBreaking,
     /// Font used for drawing the ellipsis.
-    ellipsis_font: Font,
+    pub ellipsis_font: Font,
     /// Foreground color used for drawing the ellipsis.
-    ellipsis_color: Color,
+    pub ellipsis_color: Color,
 }
 
 impl TextLayout {
@@ -155,20 +155,25 @@ impl TextLayout {
         }
     }
 
-    pub fn render_formatted<'op, F, I>(self, format: &'static str, resolve: F)
+    pub fn render_formatted<'op, F, I>(self, format: &'static str, resolve: F) -> LayoutResult
     where
         F: Fn(Token<'static>) -> I,
         I: IntoIterator<Item = Op<'op>>,
     {
-        let mut cursor = Point::new(
-            self.bounds.top_left().x,
-            self.bounds.top_left().y + self.text_font.line_height(),
-        );
+        let mut cursor = self.initial_cursor();
+
         self.layout_op_stream(
             &mut Tokenizer::new(format).flat_map(resolve),
             &mut cursor,
             &mut TextRenderer,
-        );
+        )
+    }
+
+    fn initial_cursor(&self) -> Point {
+        Point::new(
+            self.bounds.top_left().x,
+            self.bounds.top_left().y + self.text_font.line_height(),
+        )
     }
 
     pub fn layout_op_stream<'op>(
@@ -177,6 +182,8 @@ impl TextLayout {
         cursor: &mut Point,
         sink: &mut dyn LayoutSink,
     ) -> LayoutResult {
+        let mut total_processed_chars = 0;
+
         for op in ops {
             match op {
                 Op::Color(color) => {
@@ -185,14 +192,24 @@ impl TextLayout {
                 Op::Font(font) => {
                     self.text_font = font;
                 }
-                Op::Text(text) => {
-                    if let LayoutResult::OutOfBounds = self.layout_text(text, cursor, sink) {
-                        return LayoutResult::OutOfBounds;
+                Op::Text(text) => match self.layout_text(text, cursor, sink) {
+                    LayoutResult::Fitting { processed_chars } => {
+                        total_processed_chars += processed_chars;
                     }
-                }
+                    LayoutResult::OutOfBounds { processed_chars } => {
+                        total_processed_chars += processed_chars;
+
+                        return LayoutResult::OutOfBounds {
+                            processed_chars: total_processed_chars,
+                        };
+                    }
+                },
             }
         }
-        LayoutResult::Fitting
+
+        LayoutResult::Fitting {
+            processed_chars: total_processed_chars,
+        }
     }
 
     pub fn layout_text(
@@ -247,7 +264,9 @@ impl TextLayout {
                     // Report we are out of bounds and quit.
                     sink.out_of_bounds();
 
-                    return LayoutResult::OutOfBounds;
+                    return LayoutResult::OutOfBounds {
+                        processed_chars: text.len() - remaining_text.len(),
+                    };
                 } else {
                     // Advance the cursor to the beginning of the next line.
                     cursor.x = self.bounds.x0;
@@ -256,13 +275,15 @@ impl TextLayout {
             }
         }
 
-        LayoutResult::Fitting
+        LayoutResult::Fitting {
+            processed_chars: text.len(),
+        }
     }
 }
 
 pub enum LayoutResult {
-    Fitting,
-    OutOfBounds,
+    Fitting { processed_chars: usize },
+    OutOfBounds { processed_chars: usize },
 }
 
 /// Visitor for text segment operations.
@@ -498,33 +519,29 @@ impl Span {
 
 #[cfg(test)]
 mod tests {
-    use core::array;
-
     use super::*;
 
     #[test]
     fn tokenizer_yields_expected_tokens() {
-        assert!(Tokenizer::new("").eq(array::IntoIter::new([])));
-        assert!(Tokenizer::new("a").eq(array::IntoIter::new([Token::Literal(b"a")])));
-        assert!(
-            Tokenizer::new("a\0b").eq(array::IntoIter::new([Token::Literal("a\0b".as_bytes())]))
-        );
-        assert!(Tokenizer::new("{").eq(array::IntoIter::new([])));
-        assert!(Tokenizer::new("a{").eq(array::IntoIter::new([Token::Literal(b"a")])));
-        assert!(Tokenizer::new("a{b").eq(array::IntoIter::new([Token::Literal(b"a")])));
-        assert!(Tokenizer::new("{}").eq(array::IntoIter::new([Token::Argument(b"")])));
-        assert!(Tokenizer::new("a{}b{").eq(array::IntoIter::new([
-            Token::Literal(b"a"),
+        use std::array::IntoIter;
+
+        assert!(Tokenizer::new("").eq(IntoIter::new([])));
+        assert!(Tokenizer::new("x").eq(IntoIter::new([Token::Literal(b"x")])));
+        assert!(Tokenizer::new("x\0y").eq(IntoIter::new([Token::Literal("x\0y".as_bytes())])));
+        assert!(Tokenizer::new("{").eq(IntoIter::new([])));
+        assert!(Tokenizer::new("x{").eq(IntoIter::new([Token::Literal(b"x")])));
+        assert!(Tokenizer::new("x{y").eq(IntoIter::new([Token::Literal(b"x")])));
+        assert!(Tokenizer::new("{}").eq(IntoIter::new([Token::Argument(b"")])));
+        assert!(Tokenizer::new("x{}y{").eq(IntoIter::new([
+            Token::Literal(b"x"),
             Token::Argument(b""),
-            Token::Literal(b"b"),
+            Token::Literal(b"y"),
         ])));
-        assert!(
-            Tokenizer::new("{\0}").eq(array::IntoIter::new([Token::Argument("\0".as_bytes()),]))
-        );
-        assert!(Tokenizer::new("{{b}").eq(array::IntoIter::new([Token::Argument(b"{b"),])));
-        assert!(Tokenizer::new("{{{{abc").eq(array::IntoIter::new([])));
-        assert!(Tokenizer::new("a{}{{}}}}").eq(array::IntoIter::new([
-            Token::Literal(b"a"),
+        assert!(Tokenizer::new("{\0}").eq(IntoIter::new([Token::Argument("\0".as_bytes()),])));
+        assert!(Tokenizer::new("{{y}").eq(IntoIter::new([Token::Argument(b"{y"),])));
+        assert!(Tokenizer::new("{{{{xyz").eq(IntoIter::new([])));
+        assert!(Tokenizer::new("x{}{{}}}}").eq(IntoIter::new([
+            Token::Literal(b"x"),
             Token::Argument(b""),
             Token::Argument(b"{"),
             Token::Literal(b"}}}"),
