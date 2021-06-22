@@ -1,4 +1,4 @@
-from trezor import log, wire, workflow
+from trezor import log, wire, workflow, utils
 from trezor.enums import ButtonRequestType
 from trezor.messages import ButtonAck, ButtonRequest
 
@@ -10,7 +10,7 @@ if False:
     ExceptionType = Union[BaseException, Type[BaseException]]
 
 
-if __debug__:
+if __debug__ and utils.MODEL == "T":
     from ..components.tt.scroll import Paginated
 
 
