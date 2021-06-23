@@ -71,6 +71,8 @@ __all__ = (
     "confirm_timebounds_stellar",
     "confirm_proposals_tezos",
     "confirm_transfer_binance",
+    "draw_progress_init",
+    "draw_progress_update",
 )
 
 
@@ -940,3 +942,17 @@ async def confirm_transfer_binance(
             ctx, Paginated(pages), "confirm_transfer", ButtonRequestType.ConfirmOutput
         )
     )
+
+
+def draw_progress_init(sign: bool = True) -> None:
+    if sign:
+        ui.header("Signing transaction")
+    else:
+        # get_seed
+        t = Text("Please wait", ui.ICON_CONFIG)
+        ui.draw_simple(t)
+
+
+def draw_progress_update(progress: int, total: int) -> None:
+    p = 1000 * progress // total
+    ui.display.loader(p, False, 18, ui.WHITE, ui.BG)

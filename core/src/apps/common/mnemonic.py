@@ -1,6 +1,7 @@
 import storage.device
 from trezor import ui, utils, workflow
 from trezor.enums import BackupType
+from trezor.ui.layouts import draw_progress_init, draw_progress_update
 
 
 def get() -> tuple[bytes | None, int]:
@@ -54,16 +55,13 @@ def get_seed(passphrase: str = "", progress_bar: bool = True) -> bytes:
 
 
 def _start_progress() -> None:
-    from trezor.ui.components.tt.text import Text
-
     # Because we are drawing to the screen manually, without a layout, we
     # should make sure that no other layout is running.
     workflow.close_others()
-    t = Text("Please wait", ui.ICON_CONFIG)
-    ui.draw_simple(t)
+    ui.display.clear()
+    draw_progress_init(sign=False)
 
 
 def _render_progress(progress: int, total: int) -> None:
-    p = 1000 * progress // total
-    ui.display.loader(p, False, 18, ui.WHITE, ui.BG)
+    draw_progress_update(progress, total)
     ui.refresh()

@@ -7,6 +7,7 @@ from trezor.utils import chunks
 
 from ..components.common import break_path_to_lines
 from ..components.common.confirm import is_confirmed, raise_if_cancelled
+from ..components.t1 import loader
 from ..components.t1.confirm import Confirm
 from ..components.t1.text import Text
 from ..constants.t1 import (
@@ -467,3 +468,18 @@ async def show_error_and_raise(
     exc: ExceptionType = wire.ActionCancelled,
 ) -> NoReturn:
     raise NotImplementedError
+
+
+def draw_progress_init(sign: bool = True) -> None:
+    if sign:
+        ui.display.text_center(
+            ui.WIDTH // 2, 19, "Signing transaction", ui.BOLD, ui.FG, ui.BG
+        )
+    else:
+        ui.display.text_center(ui.WIDTH // 2, 19, "Starting up", ui.BOLD, ui.FG, ui.BG)
+    ui.display.text_center(ui.WIDTH // 2, 32, "Please wait", ui.NORMAL, ui.FG, ui.BG)
+
+
+def draw_progress_update(progress: int, total: int) -> None:
+    p = 1000 * progress // total
+    loader(p)
