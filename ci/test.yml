@@ -270,8 +270,8 @@ hwi trezor test:
   needs:
     - core unix frozen debug build
   script:
-    - git clone https://github.com/bitcoin-core/HWI.git
-    - cd HWI
+    - nix-shell --run "git clone https://github.com/bitcoin-core/HWI.git"
+    - nix-shell --run "cd HWI"
     - nix-shell --run "poetry install"
     - nix-shell --run "./hwi.py enumerate"
   artifacts:
